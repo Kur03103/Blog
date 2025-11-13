@@ -1,4 +1,5 @@
-from django.shortcuts import render
+from django.shortcuts import redirect, render
+from blog_app.forms import PostForm
 from blog_app.models import Post
 
 # Create your views here.
@@ -16,6 +17,11 @@ def post_detail(request,pk):
         "post_detail.html",
         {"post": post},
     )
+
+from django.contrib.auth.decorators import login_required     
+
+
+@login_required
 def draft_list(request):
     posts = Post.objects.filter(published_at__isnull=True)
     return render(
@@ -30,3 +36,27 @@ def draft_detail(request, pk):
         "draft_detail.html",
         {"post": post},
     )
+
+@login_required
+def post_create(request):
+    if request.method == "GET":
+        form = PostForm()
+        return render(
+            request,
+            "post_create.html",
+            {"form": form},
+        )
+    else:
+        form = PostForm(request.POST)
+
+        if form.is_valid():
+            post = form.save(commit=False)
+            post.author = request.user
+            post.save()
+            return redirect("draft-detail", pk=post.pk)
+        else:
+            return render(
+                request,
+                "post_craete.html",
+                {"form": form},
+            )
